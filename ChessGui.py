@@ -93,7 +93,6 @@ class ChessGui:
         quit = False
         source_square = None
         possible_destinations = set()
-        last_turn = self.__board.turn
         while not quit:
             self.show_loading_screen()
             human_turn = self.__board.turn == chess.WHITE and white_agent is None or self.__board.turn == chess.BLACK and black_agent is None
@@ -107,13 +106,11 @@ class ChessGui:
                 if self.__board.turn == chess.WHITE and white_agent is not None:
                     move = white_agent.get_move(self.__board.copy())
                     self.__board.push(move)
+                    print(self.__board.fen())
                 elif self.__board.turn == chess.BLACK and black_agent is not None:
                     move = black_agent.get_move(self.__board.copy())
                     self.__board.push(move)
-
-            if last_turn != self.__board.turn:
-                print(self.__board.fen())
-                last_turn = self.__board.turn
+                    print(self.__board.fen())
 
             self.frame()
             self.__clock.tick(self.__fps)
