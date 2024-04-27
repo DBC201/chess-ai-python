@@ -7,12 +7,15 @@ BLACK = (0, 0, 0)
 
 
 class ChessGui:
-    def __init__(self):
+    def __init__(self, fen=None):
         self.__x = 800
         self.__y = 800
         self.__screen = None
 
-        self.__board = chess.Board()
+        if fen is not None:
+            self.__board = chess.Board(fen)
+        else:
+            self.__board = chess.Board()
 
         self.__clock = pygame.time.Clock()
         self.__fps = 30
@@ -31,7 +34,7 @@ class ChessGui:
         for i in range(64):
             piece = self.__board.piece_at(i)
 
-            if piece == None:
+            if piece is None:
                 black_surface = pygame.Surface((100, 100))
                 black_surface.fill((0, 0, 0))  # Fill the surface with black
 
@@ -54,6 +57,9 @@ class ChessGui:
 
         if source_square is not None and clicked_square in possible_destinations:
             move = chess.Move(source_square, clicked_square)
+            if self.__board.piece_at(source_square) == chess.Piece(chess.PAWN, self.__board.turn):
+                if clicked_square < 8 or clicked_square >= 56:
+                    move = chess.Move(source_square, clicked_square, promotion=chess.QUEEN)
             self.__board.push(move)
             source_square = None
             possible_destinations.clear()
@@ -94,7 +100,6 @@ class ChessGui:
         source_square = None
         possible_destinations = set()
         while not quit:
-            self.show_loading_screen()
             human_turn = self.__board.turn == chess.WHITE and white_agent is None or self.__board.turn == chess.BLACK and black_agent is None
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -104,10 +109,12 @@ class ChessGui:
 
             if not self.__board.is_game_over():
                 if self.__board.turn == chess.WHITE and white_agent is not None:
+                    self.show_loading_screen()
                     move = white_agent.get_move(self.__board.copy())
                     self.__board.push(move)
                     print(self.__board.fen())
                 elif self.__board.turn == chess.BLACK and black_agent is not None:
+                    self.show_loading_screen()
                     move = black_agent.get_move(self.__board.copy())
                     self.__board.push(move)
                     print(self.__board.fen())

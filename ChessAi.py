@@ -3,6 +3,17 @@ import random
 
 CENTER_SQUARES = [chess.D4, chess.D5, chess.E4, chess.E5]
 
+BOTTOM_EDGE_SQUARES = [chess.A1, chess.B1, chess.C1, chess.D1, chess.E1, chess.F1, chess.G1, chess.H1]
+TOP_EDGE_SQUARES = [chess.A8, chess.B8, chess.C8, chess.D8, chess.E8, chess.F8, chess.G8, chess.H8]
+
+LEFT_EDGE_SQUARES = [chess.A1, chess.A2, chess.A3, chess.A4, chess.A5, chess.A6, chess.A7, chess.A8]
+RIGHT_EDGE_SQUARES = [chess.H1, chess.H2, chess.H3, chess.H4, chess.H5, chess.H6, chess.H7, chess.H8]
+
+EDGE_SQUARES = [chess.A1, chess.A2, chess.A3, chess.A4, chess.A5, chess.A6, chess.A7, chess.A8,
+                chess.H1, chess.H2, chess.H3, chess.H4, chess.H5, chess.H6, chess.H7, chess.H8,
+                chess.B1, chess.C1, chess.D1, chess.E1, chess.F1, chess.G1, chess.B8, chess.C8,
+                chess.D8, chess.E8, chess.F8, chess.G8]
+
 WHITE_WIN_SCORE = 100_000
 BLACK_WIN_SCORE = -100_000
 
@@ -17,6 +28,10 @@ def calculate_manhattan_distance(square_index1, square_index2):
 
 def calculate_distance_to_center(square_index):
     return min(calculate_manhattan_distance(square_index, center_square_index) for center_square_index in CENTER_SQUARES)
+
+
+def calculate_distance_to_edge(square_index, edge_squares):
+    return min(calculate_manhattan_distance(square_index, edge_square_index) for edge_square_index in edge_squares)
 
 
 class Node:
@@ -60,7 +75,7 @@ class Node:
             return self.piece_score
 
     def get_ordered_moves(self, shuffle=False):
-        moves = self.game.legal_moves
+        moves = list(self.game.legal_moves)
 
         has_capture = False
         group_by_score_change = {}
@@ -92,9 +107,42 @@ class Node:
                 if piece.piece_type == chess.PAWN or piece.piece_type == chess.KNIGHT or piece.piece_type == chess.BISHOP:
                     score_change += (new_distance_to_center - old_distance_to_center) * 10
             elif 16 < len(pieces) <= 28:
-                pass
+                if self.game.is_check():
+                    score_change += 5
+
+                old_attack_count = self.game.attacks(move.from_square)
+                new_attack_count = self.game.attacks(move.to_square)
+
+                score_change += (len(new_attack_count) - len(old_attack_count))
+
+                piece = self.game.piece_at(move.from_square)
+
+                if piece.piece_type == chess.PAWN:
+                    edge_squares = TOP_EDGE_SQUARES if piece.color == chess.WHITE else BOTTOM_EDGE_SQUARES
+                    old_distance_to_edge = calculate_distance_to_edge(move.to_square, edge_squares)
+                    new_distance_to_edge = calculate_distance_to_edge(move.from_square, edge_squares)
+
+                    score_change += (old_distance_to_edge - new_distance_to_edge) * 5
+                elif piece.piece_type == chess.KING:
+                    old_distance_to_edge = min(calculate_distance_to_edge(move.to_square, LEFT_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.to_square, RIGHT_EDGE_SQUARES))
+                    new_distance_to_edge = min(calculate_distance_to_edge(move.from_square, LEFT_EDGE_SQUARES),
+                                                  calculate_distance_to_edge(move.from_square, RIGHT_EDGE_SQUARES))
+
+                    score_change += (old_distance_to_edge - new_distance_to_edge) * 5
             else:
-                pass
+                piece = self.game.piece_at(move.from_square)
+
+                if self.game.is_check():
+                    score_change += 5
+
+                if piece.piece_type == chess.KING:
+                    old_distance_to_edge = min(calculate_distance_to_edge(move.to_square, LEFT_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.to_square, RIGHT_EDGE_SQUARES))
+                    new_distance_to_edge = min(calculate_distance_to_edge(move.from_square, LEFT_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.from_square, RIGHT_EDGE_SQUARES))
+
+                    score_change -= (old_distance_to_edge - new_distance_to_edge) * 25
 
             if score_change in group_by_score_change:
                 group_by_score_change[score_change].append(move)
@@ -177,8 +225,6 @@ class ChessAi:
 
     def get_move(self, board: chess.Board):
         root = None
-
-        is_opening = board.ply() < 20
 
         if self.cache is None:
             root = Node(board, None)
