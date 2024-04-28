@@ -1,3 +1,4 @@
+# https://github.com/DBC201/chess-ai-python/blob/master/ChessAi.py
 import chess
 import random
 
@@ -106,7 +107,7 @@ class Node:
 
                 if piece.piece_type == chess.PAWN or piece.piece_type == chess.KNIGHT or piece.piece_type == chess.BISHOP:
                     score_change += (new_distance_to_center - old_distance_to_center) * 10
-            elif 16 < len(pieces) <= 28:
+            elif 20 < len(pieces) <= 28:
                 if self.game.is_check():
                     score_change += 5
 
@@ -122,14 +123,14 @@ class Node:
                     old_distance_to_edge = calculate_distance_to_edge(move.to_square, edge_squares)
                     new_distance_to_edge = calculate_distance_to_edge(move.from_square, edge_squares)
 
-                    score_change += (old_distance_to_edge - new_distance_to_edge) * 5
+                    score_change += (new_distance_to_edge - old_distance_to_edge) * 10
                 elif piece.piece_type == chess.KING:
                     old_distance_to_edge = min(calculate_distance_to_edge(move.to_square, LEFT_EDGE_SQUARES),
                                                calculate_distance_to_edge(move.to_square, RIGHT_EDGE_SQUARES))
                     new_distance_to_edge = min(calculate_distance_to_edge(move.from_square, LEFT_EDGE_SQUARES),
                                                   calculate_distance_to_edge(move.from_square, RIGHT_EDGE_SQUARES))
 
-                    score_change += (old_distance_to_edge - new_distance_to_edge) * 5
+                    score_change += (new_distance_to_edge - old_distance_to_edge) * 10
             else:
                 piece = self.game.piece_at(move.from_square)
 
@@ -138,11 +139,15 @@ class Node:
 
                 if piece.piece_type == chess.KING:
                     old_distance_to_edge = min(calculate_distance_to_edge(move.to_square, LEFT_EDGE_SQUARES),
-                                               calculate_distance_to_edge(move.to_square, RIGHT_EDGE_SQUARES))
+                                               calculate_distance_to_edge(move.to_square, RIGHT_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.to_square, TOP_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.to_square, BOTTOM_EDGE_SQUARES))
                     new_distance_to_edge = min(calculate_distance_to_edge(move.from_square, LEFT_EDGE_SQUARES),
-                                               calculate_distance_to_edge(move.from_square, RIGHT_EDGE_SQUARES))
+                                               calculate_distance_to_edge(move.from_square, RIGHT_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.from_square, TOP_EDGE_SQUARES),
+                                               calculate_distance_to_edge(move.from_square, BOTTOM_EDGE_SQUARES))
 
-                    score_change -= (old_distance_to_edge - new_distance_to_edge) * 25
+                    score_change += (old_distance_to_edge - new_distance_to_edge) * 25
 
             if score_change in group_by_score_change:
                 group_by_score_change[score_change].append(move)
